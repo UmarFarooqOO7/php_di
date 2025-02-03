@@ -9,22 +9,35 @@ use App\Database\DatabaseConnection;
 use App\Database\UserRepository;
 use App\Database\MySqlUserRepository;
 use App\UserService;
+use App\Events\EventDispatcher;
+use App\Events\UserCreated;
+use App\Events\UserCreatedListener;
 
 try {
     $container = new Container();
     
-    // Bind dependencies
+    // Bind core services
     $container->singleton(DatabaseConnection::class, function() {
         return DatabaseConnection::getInstance();
     });
     
     $container->bind(Logger::class, FileLogger::class);
     $container->bind(UserRepository::class, MySqlUserRepository::class);
-
-    // Resolve and use UserService
-    $userService = $container->resolve(UserService::class);
     
-    // Create new user
+    // Bind EventDispatcher as singleton
+    $container->singleton(EventDispatcher::class, EventDispatcher::class);
+    
+    // Set up event listeners
+    $eventDispatcher = $container->resolve(EventDispatcher::class);
+    $userCreatedListener = $container->resolve(UserCreatedListener::class);
+    
+    $eventDispatcher->listen(
+        UserCreated::class, 
+        [$userCreatedListener, 'handle']
+    );
+
+    // Create and use UserService
+    $userService = $container->resolve(UserService::class);
     $userService->createUser("John Doe");
     
     // Get single user

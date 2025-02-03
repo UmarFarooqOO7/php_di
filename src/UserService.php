@@ -3,12 +3,15 @@
 namespace App;
 
 use App\Database\UserRepository;
+use App\Events\EventDispatcher;
+use App\Events\UserCreated;
 
 class UserService
 {
     public function __construct(
         private UserRepository $repository,
-        private Logger $logger
+        private Logger $logger,
+        private EventDispatcher $events
     ) {}
 
     public function createUser(string $name)
@@ -17,6 +20,13 @@ class UserService
         
         if ($this->repository->save($name)) {
             $this->logger->log("User '{$name}' created successfully");
+            
+            // Dispatch UserCreated event
+            $this->events->dispatch(new UserCreated(
+                name: $name,
+                timestamp: date('Y-m-d H:i:s')
+            ));
+            
             return true;
         }
         
