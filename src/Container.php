@@ -11,7 +11,7 @@ class Container
 
     public function bind(string $key, callable|string $resolver)
     {
-        echo "Binding {$key} to {$resolver}<br>";
+        // echo "Binding {$key} to {$resolver}<br>";
         $this->bindings[$key] = $resolver;
     }
 
