@@ -8,22 +8,46 @@ use Exception;
 class Container
 {
     private array $bindings = [];
+    private array $instances = [];
 
-    public function bind(string $key, callable|string $resolver)
+    public function bind(string $key, callable|string $resolver, bool $singleton = false)
     {
-        // echo "Binding {$key} to {$resolver}<br>";
-        $this->bindings[$key] = $resolver;
+        $this->bindings[$key] = [
+            'resolver' => $resolver,
+            'singleton' => $singleton
+        ];
+    }
+
+    public function singleton(string $key, callable|string $resolver)
+    {
+        // use bind method with $singleton = true
+        $this->bind($key, $resolver, true);
     }
 
     public function resolve(string $key)
     {
+        // Return cached instance if it exists
+        if (isset($this->instances[$key])) {
+            echo "Returning cached instance for {$key}<br>";
+            return $this->instances[$key];
+        }
+
         echo "Resolving {$key}<br>";
         if (isset($this->bindings[$key])) {
             echo "Using explicit binding for {$key}<br>";
-            $resolver = $this->bindings[$key];
+            $binding = $this->bindings[$key];
+            $resolver = $binding['resolver'];
 
             echo "Resolver: " . (is_callable($resolver) ? 'Closure' : $resolver) . "<br>";
-            return is_callable($resolver) ? $resolver($this) : new $resolver();
+            $instance = is_callable($resolver) ? $resolver($this) : new $resolver();
+
+            // Cache instance if it's a singleton
+            if ($binding['singleton']) {
+                echo "Caching singleton instance for {$key}<br>";
+                $this->instances[$key] = $instance;
+            }
+
+            return $instance;
         }
 
         if (class_exists($key)) {
