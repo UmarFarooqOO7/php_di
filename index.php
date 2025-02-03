@@ -5,39 +5,35 @@ require __DIR__ . '/vendor/autoload.php';
 use App\Container;
 use App\Logger;
 use App\FileLogger;
-use App\DatabaseConnection;
+use App\Database\DatabaseConnection;
+use App\Database\UserRepository;
+use App\Database\MySqlUserRepository;
 use App\UserService;
 
 try {
     $container = new Container();
     
-    // Regular binding (new instance each time)
+    // Bind dependencies
+    $container->singleton(DatabaseConnection::class, function() {
+        return DatabaseConnection::getInstance();
+    });
+    
     $container->bind(Logger::class, FileLogger::class);
-    
-    // Singleton binding (same instance every time)
-    $container->singleton(DatabaseConnection::class, DatabaseConnection::class);
+    $container->bind(UserRepository::class, MySqlUserRepository::class);
 
-    echo "<h3>Regular Binding Demo:</h3>";
-    $logger1 = $container->resolve(Logger::class);
-    echo "<br>";
-    $logger2 = $container->resolve(Logger::class);
-
-    echo "<br>";
-    $logger1->log("First logger instance<br>");
-    $logger2->log("Second logger instance<br>");
-
-    echo "<h3>Singleton Binding Demo:</h3>";
-    echo "1st resolve<br>";
-    $db1 = $container->resolve(DatabaseConnection::class);
-    echo "<br>2nd resolve<br>";
-    $db2 = $container->resolve(DatabaseConnection::class);
+    // Resolve and use UserService
+    $userService = $container->resolve(UserService::class);
     
-    $db1->query("SELECT * FROM users");
-    $db2->query("SELECT * FROM posts");
+    // Create new user
+    $userService->createUser("John Doe");
     
-    echo "<h3>Proof of Singleton:</h3>";
-    echo "Total DB connections created: " . DatabaseConnection::getInstanceCount() . "<br>";
-    echo "Are variables sharing same instance? " . ($db1 === $db2 ? "Yes" : "No") . "<br>";
+    // Get single user
+    $user = $userService->getUser(1);
+    echo "<pre>Found user: " . print_r($user, true) . "</pre>";
+    
+    // Get all users
+    $users = $userService->getAllUsers();
+    echo "<pre>All users: " . print_r($users, true) . "</pre>";
 
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();

@@ -39,7 +39,11 @@ class Container
             $resolver = $binding['resolver'];
 
             echo "Resolver: " . (is_callable($resolver) ? 'Closure' : $resolver) . "<br>";
-            $instance = is_callable($resolver) ? $resolver($this) : new $resolver();
+            
+            // Handle constructor dependencies for bound classes
+            $instance = is_callable($resolver) 
+                ? $resolver($this) 
+                : $this->autoResolve($resolver);
 
             // Cache instance if it's a singleton
             if ($binding['singleton']) {
@@ -60,7 +64,7 @@ class Container
 
     private function autoResolve(string $class)
     {
-        echo "autoResolve {$class}<br>";
+        // echo "autoResolve {$class}<br>";
         $reflection = new ReflectionClass($class);
 
         $constructor = $reflection->getConstructor();
